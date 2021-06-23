@@ -122,11 +122,15 @@ class MainActivity : ComponentActivity() {
             while (y != destiY) {
                 current = walk(levelData, current, x, y)
                 if (current == -1) break
+                freeFall(levelData, current - COLUMNS, 'O')
+                freeFall(levelData, current - COLUMNS, 'X')
                 y += dirY
             }
             while (current != -1 && current != desti) {
                 current = walk(levelData, current, x, y)
                 if (current == -1) break
+                freeFall(levelData, current - COLUMNS, 'O')
+                freeFall(levelData, current - COLUMNS, 'X')
                 x += dirX
             }
         }
@@ -139,7 +143,7 @@ class MainActivity : ComponentActivity() {
         y: Int
     ): Int {
         val newPos = (y * COLUMNS) + x
-        when(levelData[newPos]) {
+        when (levelData[newPos]) {
             'X' -> {
                 // TODO: update gem count
             }
@@ -151,5 +155,32 @@ class MainActivity : ComponentActivity() {
         levelData[newPos] = '@'
         delay(200)
         return newPos
+    }
+
+    private suspend fun freeFall(
+        levelData: SnapshotStateList<Char>,
+        current: Int,
+        what: Char
+    ) {
+        if (levelData[current] == what)
+            lifecycleScope.launch {
+                delay(200)
+                val x = current % COLUMNS
+                var y = current / COLUMNS + 1
+                var pos = current
+                while (y < ROWS) {
+                    val newPos = y * COLUMNS + x
+                    when (levelData[newPos]) {
+                        '#' -> {
+                            break
+                        }
+                    }
+                    levelData[pos] = ' '
+                    levelData[newPos] = what
+                    y += 1
+                    pos = newPos
+                    delay(200)
+                }
+            }
     }
 }
