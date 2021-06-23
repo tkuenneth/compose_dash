@@ -121,16 +121,10 @@ class MainActivity : ComponentActivity() {
             var y = startY
             while (y != destiY) {
                 current = walk(levelData, current, x, y)
-                if (current == -1) break
-                freeFall(levelData, current - COLUMNS, 'O')
-                freeFall(levelData, current - COLUMNS, 'X')
                 y += dirY
             }
             while (current != -1 && current != desti) {
                 current = walk(levelData, current, x, y)
-                if (current == -1) break
-                freeFall(levelData, current - COLUMNS, 'O')
-                freeFall(levelData, current - COLUMNS, 'X')
                 x += dirX
             }
         }
@@ -154,6 +148,10 @@ class MainActivity : ComponentActivity() {
         levelData[current] = ' '
         levelData[newPos] = '@'
         delay(200)
+        if (current != -1) {
+            freeFall(levelData, current - COLUMNS, 'O')
+            freeFall(levelData, current - COLUMNS, 'X')
+        }
         return newPos
     }
 
