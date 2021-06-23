@@ -119,7 +119,7 @@ class MainActivity : ComponentActivity() {
         lifecycleScope.launch {
             var x = startX
             var y = startY
-            while (y != destiY) {
+            while (current != -1 && y != destiY) {
                 current = walk(levelData, current, x, y)
                 y += dirY
             }
@@ -160,16 +160,17 @@ class MainActivity : ComponentActivity() {
         current: Int,
         what: Char
     ) {
-        if (levelData[current] == what)
+        if (levelData[current] == what) {
             lifecycleScope.launch {
                 delay(200)
+                freeFall(levelData, current - COLUMNS, what)
                 val x = current % COLUMNS
                 var y = current / COLUMNS + 1
                 var pos = current
                 while (y < ROWS) {
                     val newPos = y * COLUMNS + x
                     when (levelData[newPos]) {
-                        '#' -> {
+                        '#', 'O', 'X' -> {
                             break
                         }
                     }
@@ -180,5 +181,6 @@ class MainActivity : ComponentActivity() {
                     delay(200)
                 }
             }
+        }
     }
 }
