@@ -25,6 +25,7 @@ import androidx.lifecycle.lifecycleScope
 import com.thomaskuenneth.composedash.ui.theme.ComposeDashTheme
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import java.util.*
 
 const val COLUMNS = 40
 const val ROWS = 14
@@ -82,7 +83,7 @@ class MainActivity : ComponentActivity() {
         val levelData = remember(key.value) {
             createLevelDate()
         }
-        val gemsTotal = 1 // remember(key.value) { Collections.frequency(levelData, CHAR_GEM) }
+        val gemsTotal = remember(key.value) { Collections.frequency(levelData, CHAR_GEM) }
         val lives = remember(key.value) { mutableStateOf(NUMBER_OF_LIVES) }
         val gemsCollected = remember(key.value) { mutableStateOf(0) }
         Box {
