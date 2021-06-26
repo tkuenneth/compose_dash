@@ -81,7 +81,7 @@ class MainActivity : ComponentActivity() {
     fun ComposeDash() {
         val key = remember { mutableStateOf(0L) }
         val levelData = remember(key.value) {
-            createLevelDate()
+            createLevelData()
         }
         val gemsTotal = remember(key.value) { Collections.frequency(levelData, CHAR_GEM) }
         val lives = remember(key.value) { mutableStateOf(NUMBER_OF_LIVES) }
@@ -141,15 +141,17 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private fun createLevelDate(): SnapshotStateList<Char> {
+    private fun createLevelData(): SnapshotStateList<Char> {
         val data = mutableStateListOf<Char>()
         var rows = 0
         level.split("\n").forEach {
-            if (it.length != COLUMNS) throw RuntimeException("length of row $rows is not $COLUMNS")
+            if (it.length != COLUMNS)
+                throw RuntimeException("length of row $rows is not $COLUMNS")
             data.addAll(it.toList())
             rows += 1
         }
-        if (rows != ROWS) throw RuntimeException("number of rows is not $ROWS")
+        if (rows != ROWS)
+            throw RuntimeException("number of rows is not $ROWS")
         return data
     }
 
