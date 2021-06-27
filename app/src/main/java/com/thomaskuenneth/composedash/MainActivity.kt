@@ -7,6 +7,7 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.lazy.GridCells
 import androidx.compose.foundation.lazy.LazyVerticalGrid
@@ -46,6 +47,8 @@ val level = """
     #........X......................@......#
     ########################################
     """.trimIndent()
+
+const val POWER = 0x21BB
 
 const val PLAYER = 0x1F3C3
 
@@ -120,24 +123,45 @@ class MainActivity : ComponentActivity() {
                 style = TextStyle(fontSize = 16.sp),
                 modifier = Modifier.align(alignment = Alignment.BottomCenter)
             )
-            if (gemsTotal == gemsCollected.value) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(color = Color(0xa0000000))
-                        .clickable {
-                            key.value += 1
-                        }
-                ) {
-                    Text(
-                        "Well done!\nTap to restart",
-                        style = TextStyle(fontSize = 48.sp, textAlign = TextAlign.Center),
-                        color = Color.White,
-                        modifier = Modifier
-                            .align(Alignment.Center)
-                    )
+            if (gemsTotal == gemsCollected.value)
+                LevelCompleted(key)
+            RestartButton(key, this)
+        }
+    }
+
+    @Composable
+    fun LevelCompleted(key: MutableState<Long>) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(color = Color(0xa0000000))
+                .clickable {
+                    key.value += 1
                 }
-            }
+        ) {
+            Text(
+                "Well done!\nTap to restart",
+                style = TextStyle(fontSize = 48.sp, textAlign = TextAlign.Center),
+                color = Color.White,
+                modifier = Modifier
+                    .align(Alignment.Center)
+            )
+        }
+    }
+
+    @Composable
+    fun RestartButton(key: MutableState<Long>, scope: BoxScope) {
+        scope.run {
+            Text(
+                POWER.unicodeToString(),
+                style = TextStyle(fontSize = 32.sp),
+                color = Color.White,
+                modifier = Modifier
+                    .align(Alignment.BottomStart)
+                    .clickable {
+                        key.value += 1
+                    }
+            )
         }
     }
 
