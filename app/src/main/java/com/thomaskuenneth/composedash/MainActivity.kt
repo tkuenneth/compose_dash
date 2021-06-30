@@ -51,15 +51,19 @@ val level = """
 const val POWER = 0x21BB
 
 const val PLAYER = 0x1F3C3
+const val CHAR_PLAYER = '@'
 
 const val GEM = 0x1F48E
 const val CHAR_GEM = 'X'
 
 const val BRICK = 0x1F9F1
+const val CHAR_BRICK = '#'
 
 const val ROCK = 0x1FAA8
+const val CHAR_ROCK = 'O'
 
 const val SAND = 0x2591
+const val CHAR_SAND = '.'
 
 const val NUMBER_OF_LIVES = 3
 
@@ -97,14 +101,14 @@ class MainActivity : ComponentActivity() {
                 itemsIndexed(levelData, itemContent = { index, item ->
                     var background = Color.Transparent
                     val symbol = when (item) {
-                        '#' -> BRICK
+                        CHAR_BRICK -> BRICK
                         CHAR_GEM -> GEM
-                        'O' -> ROCK
-                        '.' -> {
+                        CHAR_ROCK -> ROCK
+                        CHAR_SAND -> {
                             background = Color(0xffc2b280)
                             SAND
                         }
-                        '@' -> PLAYER
+                        CHAR_PLAYER -> PLAYER
                         else -> 32
                     }
                     Text(
@@ -184,7 +188,7 @@ class MainActivity : ComponentActivity() {
         desti: Int,
         gemsCollected: MutableState<Int>
     ) {
-        val start = levelData.indexOf('@')
+        val start = levelData.indexOf(CHAR_PLAYER)
         if (start == desti) return
         val startX = start % COLUMNS
         val startY = start / COLUMNS
@@ -216,19 +220,19 @@ class MainActivity : ComponentActivity() {
     ): Int {
         val newPos = (y * COLUMNS) + x
         when (levelData[newPos]) {
-            'X' -> {
+            CHAR_GEM -> {
                 gemsCollected.value += 1
             }
-            'O', '#' -> {
+            CHAR_ROCK, CHAR_BRICK -> {
                 return -1
             }
         }
         levelData[current] = ' '
-        levelData[newPos] = '@'
+        levelData[newPos] = CHAR_PLAYER
         delay(200)
         if (current != -1) {
-            freeFall(levelData, current - COLUMNS, 'O')
-            freeFall(levelData, current - COLUMNS, 'X')
+            freeFall(levelData, current - COLUMNS, CHAR_ROCK)
+            freeFall(levelData, current - COLUMNS, CHAR_GEM)
         }
         return newPos
     }
@@ -248,7 +252,7 @@ class MainActivity : ComponentActivity() {
                 while (y < ROWS) {
                     val newPos = y * COLUMNS + x
                     when (levelData[newPos]) {
-                        '#', 'O', 'X' -> {
+                        CHAR_BRICK, CHAR_ROCK, 'X' -> {
                             break
                         }
                     }
