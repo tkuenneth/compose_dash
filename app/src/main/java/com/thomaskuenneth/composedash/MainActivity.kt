@@ -252,7 +252,7 @@ class MainActivity : ComponentActivity() {
                 while (y < ROWS) {
                     val newPos = y * COLUMNS + x
                     when (levelData[newPos]) {
-                        CHAR_BRICK, CHAR_ROCK, 'X' -> {
+                        CHAR_BRICK, CHAR_ROCK, CHAR_GEM -> {
                             break
                         }
                     }
