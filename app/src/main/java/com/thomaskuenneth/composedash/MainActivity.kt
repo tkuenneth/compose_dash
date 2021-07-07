@@ -91,8 +91,10 @@ class MainActivity : ComponentActivity() {
             createLevelData()
         }
         val gemsTotal = remember(key.value) { Collections.frequency(levelData, CHAR_GEM) }
-        val lives = remember(key.value) { mutableStateOf(NUMBER_OF_LIVES) }
         val gemsCollected = remember(key.value) { mutableStateOf(0) }
+        // Must be reset explicitly
+        val lastLives = remember { mutableStateOf(NUMBER_OF_LIVES) }
+        val lives = remember { mutableStateOf(NUMBER_OF_LIVES) }
         Box {
             LazyVerticalGrid(
                 modifier = Modifier.fillMaxSize(),
@@ -115,7 +117,7 @@ class MainActivity : ComponentActivity() {
                         modifier = Modifier
                             .background(background)
                             .clickable {
-                                movePlayerTo(levelData, index, gemsCollected)
+                                movePlayerTo(levelData, index, gemsCollected, lives)
                             },
                         text = symbol.unicodeToString()
                     )
@@ -129,7 +131,10 @@ class MainActivity : ComponentActivity() {
             )
             if (gemsTotal == gemsCollected.value)
                 LevelCompleted(key)
-            RestartButton(key, this)
+            if (lives.value != lastLives.value) {
+                NextTry(key, lives, lastLives)
+            }
+            RestartButton(key, this, lives, lastLives)
         }
     }
 
@@ -154,7 +159,42 @@ class MainActivity : ComponentActivity() {
     }
 
     @Composable
-    fun RestartButton(key: MutableState<Long>, scope: BoxScope) {
+    fun NextTry(
+        key: MutableState<Long>,
+        lives: MutableState<Int>,
+        lastLives: MutableState<Int>
+    ) {
+        val canTryAgain = lives.value > 0
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(color = Color(0xa0000000))
+                .clickable {
+                    if (canTryAgain)
+                        lastLives.value = lives.value
+                    else {
+                        lives.value = NUMBER_OF_LIVES
+                        lastLives.value = NUMBER_OF_LIVES
+                    }
+                    key.value += 1
+                }
+        ) {
+            Text(
+                "I am sorry!\n${if (canTryAgain) "Try again" else "You lost"}",
+                style = TextStyle(fontSize = 48.sp, textAlign = TextAlign.Center),
+                color = Color.White,
+                modifier = Modifier
+                    .align(Alignment.Center)
+            )
+        }
+    }
+
+    @Composable
+    fun RestartButton(
+        key: MutableState<Long>, scope: BoxScope,
+        lives: MutableState<Int>,
+        lastLives: MutableState<Int>
+    ) {
         scope.run {
             Text(
                 POWER.unicodeToString(),
@@ -163,6 +203,8 @@ class MainActivity : ComponentActivity() {
                 modifier = Modifier
                     .align(Alignment.BottomStart)
                     .clickable {
+                        lives.value = NUMBER_OF_LIVES
+                        lastLives.value = NUMBER_OF_LIVES
                         key.value += 1
                     }
             )
@@ -186,7 +228,8 @@ class MainActivity : ComponentActivity() {
     private fun movePlayerTo(
         levelData: SnapshotStateList<Char>,
         desti: Int,
-        gemsCollected: MutableState<Int>
+        gemsCollected: MutableState<Int>,
+        lives: MutableState<Int>
     ) {
         val start = levelData.indexOf(CHAR_PLAYER)
         if (start == desti) return
@@ -201,11 +244,11 @@ class MainActivity : ComponentActivity() {
             var x = startX
             var y = startY
             while (current != -1 && y != destiY) {
-                current = walk(levelData, current, x, y, gemsCollected)
+                current = walk(levelData, current, x, y, gemsCollected, lives)
                 y += dirY
             }
             while (current != -1 && current != desti) {
-                current = walk(levelData, current, x, y, gemsCollected)
+                current = walk(levelData, current, x, y, gemsCollected, lives)
                 x += dirX
             }
         }
@@ -216,44 +259,54 @@ class MainActivity : ComponentActivity() {
         current: Int,
         x: Int,
         y: Int,
-        gemsCollected: MutableState<Int>
+        gemsCollected: MutableState<Int>,
+        lives: MutableState<Int>
     ): Int {
         val newPos = (y * COLUMNS) + x
+        var result = newPos
         when (levelData[newPos]) {
             CHAR_GEM -> {
                 gemsCollected.value += 1
             }
             CHAR_ROCK, CHAR_BRICK -> {
-                return -1
+                result = -1
             }
         }
-        levelData[current] = ' '
-        levelData[newPos] = CHAR_PLAYER
-        delay(200)
-        if (current != -1) {
-            freeFall(levelData, current - COLUMNS, CHAR_ROCK)
-            freeFall(levelData, current - COLUMNS, CHAR_GEM)
+        if (result != -1) {
+            levelData[current] = ' '
+            levelData[newPos] = CHAR_PLAYER
         }
-        return newPos
+        delay(200)
+        freeFall(levelData, newPos - COLUMNS, CHAR_ROCK, lives)
+        freeFall(levelData, newPos - COLUMNS, CHAR_GEM, lives)
+        return result
     }
 
     private suspend fun freeFall(
         levelData: SnapshotStateList<Char>,
         current: Int,
-        what: Char
+        what: Char,
+        lives: MutableState<Int>
     ) {
-        if (levelData[current] == what) {
-            lifecycleScope.launch {
-                delay(200)
-                freeFall(levelData, current - COLUMNS, what)
+        lifecycleScope.launch {
+            delay(800)
+            if (levelData[current] == what) {
+                freeFall(levelData, current - COLUMNS, what, lives)
                 val x = current % COLUMNS
                 var y = current / COLUMNS + 1
                 var pos = current
+                var playerHit = false
                 while (y < ROWS) {
                     val newPos = y * COLUMNS + x
                     when (levelData[newPos]) {
                         CHAR_BRICK, CHAR_ROCK, CHAR_GEM -> {
                             break
+                        }
+                        CHAR_PLAYER -> {
+                            if (!playerHit) {
+                                playerHit = true
+                                lives.value -= 1
+                            }
                         }
                     }
                     levelData[pos] = ' '
