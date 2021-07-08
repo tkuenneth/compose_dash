@@ -25,6 +25,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.lifecycleScope
 import com.thomaskuenneth.composedash.ui.theme.ComposeDashTheme
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import java.util.*
 
@@ -36,15 +37,15 @@ val level = """
     #...............................X......#
     #.......OO.......OOOOOO................#
     #.......OO........OOOOOO...............#
-    #.......XXXX.........X.................#
+    #.......XXXX!.......!X.................#
     #......................................#
     #.........................##############
     #.........OO...........................#
     #.........XXX..........................#
     ##################.....................#
     #......................XXXXXX..........#
-    #.......OOOOOOO........................#
-    #.......!X......................@......#
+    #       OOOOOOO........................#
+    #      !.X......................@......#
     ########################################
     """.trimIndent()
 
@@ -68,12 +69,76 @@ const val CHAR_SAND = '.'
 const val SPIDER = 0x1F577
 const val CHAR_SPIDER = '!'
 
+const val BLANK = 0x20
+const val CHAR_BLANK = ' '
+
 const val NUMBER_OF_LIVES = 3
 
-class Enemy(val index: Int) {
-    var dirX = if (Math.random() > 0.5) 1 else -1
-    var dirY = if (Math.random() > 0.5) 1 else -1
+lateinit var enemies: SnapshotStateList<Enemy>
+lateinit var levelData: SnapshotStateList<Char>
+lateinit var lives: MutableState<Int>
+lateinit var key: MutableState<Long>
+
+data class Enemy(var index: Int) {
+    var dirX = 0
+    var dirY = 0
 }
+
+suspend fun moveEnemies() {
+    delay(200)
+    var playerHit = false
+    if (::enemies.isInitialized) {
+        val indexPlayer = levelData.indexOf(CHAR_PLAYER)
+        val colPlayer = indexPlayer % COLUMNS
+        val rowPlayer = indexPlayer / COLUMNS
+        enemies.forEach {
+            if (!playerHit) {
+                val current = it.index
+                val row = current / COLUMNS
+                val col = current % COLUMNS
+                var newPos = current
+                if (col != colPlayer) {
+                    if (it.dirX == 0)
+                        it.dirX = if (col >= colPlayer) -1 else 1
+                    newPos += it.dirX
+                    val newCol = newPos % COLUMNS
+                    if (newCol < 0 || newCol >= COLUMNS || levelData[newPos] != CHAR_BLANK) {
+                        if (isPlayer(levelData, newPos)) {
+                            playerHit = true
+                        }
+                        newPos = current
+                        it.dirX = -it.dirX
+                    }
+                }
+                if (row != rowPlayer) {
+                    val temp = newPos
+                    if (it.dirY == 0)
+                        it.dirY = if (row >= rowPlayer) -COLUMNS else COLUMNS
+                    newPos += it.dirY
+                    val newRow = newPos / COLUMNS
+                    if (newRow < 0 || newRow >= ROWS || levelData[newPos] != CHAR_BLANK) {
+                        if (isPlayer(levelData, newPos)) {
+                            playerHit = true
+                        }
+                        newPos = temp
+                        it.dirY = 0
+                    }
+                }
+                if (newPos != it.index) {
+                    levelData[newPos] = CHAR_SPIDER
+                    levelData[it.index] = CHAR_BLANK
+                    it.index = newPos
+                }
+            }
+        }
+    }
+    if (playerHit) {
+        lives.value -= 1
+        key.value += 1
+    }
+}
+
+fun isPlayer(levelData: SnapshotStateList<Char>, index: Int) = levelData[index] == CHAR_PLAYER
 
 class MainActivity : ComponentActivity() {
 
@@ -88,22 +153,25 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
+        lifecycleScope.launch {
+            while (isActive) moveEnemies()
+        }
     }
 
     @ExperimentalStdlibApi
     @ExperimentalFoundationApi
     @Composable
     fun ComposeDash() {
-        val key = remember { mutableStateOf(0L) }
-        val levelData = remember(key.value) {
+        key = remember { mutableStateOf(0L) }
+        levelData = remember(key.value) {
             createLevelData()
         }
-        val enemies = remember { createEnemies(levelData) }
+        enemies = remember(key.value) { createEnemies(levelData) }
         val gemsTotal = remember(key.value) { Collections.frequency(levelData, CHAR_GEM) }
         val gemsCollected = remember(key.value) { mutableStateOf(0) }
         // Must be reset explicitly
         val lastLives = remember { mutableStateOf(NUMBER_OF_LIVES) }
-        val lives = remember { mutableStateOf(NUMBER_OF_LIVES) }
+        lives = remember { mutableStateOf(NUMBER_OF_LIVES) }
         Box {
             LazyVerticalGrid(
                 modifier = Modifier.fillMaxSize(),
@@ -121,7 +189,7 @@ class MainActivity : ComponentActivity() {
                         }
                         CHAR_PLAYER -> PLAYER
                         CHAR_SPIDER -> SPIDER
-                        else -> 32
+                        else -> BLANK
                     }
                     Text(
                         modifier = Modifier
@@ -293,7 +361,7 @@ class MainActivity : ComponentActivity() {
             }
         }
         if (result != -1) {
-            levelData[current] = ' '
+            levelData[current] = CHAR_BLANK
             levelData[newPos] = CHAR_PLAYER
         }
         delay(200)
@@ -329,7 +397,7 @@ class MainActivity : ComponentActivity() {
                             }
                         }
                     }
-                    levelData[pos] = ' '
+                    levelData[pos] = CHAR_BLANK
                     levelData[newPos] = what
                     y += 1
                     pos = newPos
