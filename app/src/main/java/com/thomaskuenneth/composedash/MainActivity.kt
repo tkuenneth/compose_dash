@@ -44,7 +44,7 @@ val level = """
     ##################.....................#
     #......................XXXXXX..........#
     #.......OOOOOOO........................#
-    #........X......................@......#
+    #.......!X......................@......#
     ########################################
     """.trimIndent()
 
@@ -65,7 +65,15 @@ const val CHAR_ROCK = 'O'
 const val SAND = 0x2591
 const val CHAR_SAND = '.'
 
+const val SPIDER = 0x1F577
+const val CHAR_SPIDER = '!'
+
 const val NUMBER_OF_LIVES = 3
+
+class Enemy(val index: Int) {
+    var dirX = if (Math.random() > 0.5) 1 else -1
+    var dirY = if (Math.random() > 0.5) 1 else -1
+}
 
 class MainActivity : ComponentActivity() {
 
@@ -90,6 +98,7 @@ class MainActivity : ComponentActivity() {
         val levelData = remember(key.value) {
             createLevelData()
         }
+        val enemies = remember { createEnemies(levelData) }
         val gemsTotal = remember(key.value) { Collections.frequency(levelData, CHAR_GEM) }
         val gemsCollected = remember(key.value) { mutableStateOf(0) }
         // Must be reset explicitly
@@ -111,6 +120,7 @@ class MainActivity : ComponentActivity() {
                             SAND
                         }
                         CHAR_PLAYER -> PLAYER
+                        CHAR_SPIDER -> SPIDER
                         else -> 32
                     }
                     Text(
@@ -223,6 +233,16 @@ class MainActivity : ComponentActivity() {
         if (rows != ROWS)
             throw RuntimeException("number of rows is not $ROWS")
         return data
+    }
+
+    private fun createEnemies(levelDate: SnapshotStateList<Char>): SnapshotStateList<Enemy> {
+        val enemies = mutableStateListOf<Enemy>()
+        levelDate.forEachIndexed { index, char ->
+            if (char == CHAR_SPIDER) {
+                enemies.add(Enemy(index))
+            }
+        }
+        return enemies
     }
 
     private fun movePlayerTo(
