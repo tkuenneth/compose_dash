@@ -379,7 +379,8 @@ class MainActivity : ComponentActivity() {
         lifecycleScope.launch {
             delay(800)
             if (levelData[current] == what) {
-                freeFall(levelData, current - COLUMNS, what, lives)
+                freeFall(levelData, current - COLUMNS, CHAR_ROCK, lives)
+                freeFall(levelData, current - COLUMNS, CHAR_GEM, lives)
                 val x = current % COLUMNS
                 var y = current / COLUMNS + 1
                 var pos = current
