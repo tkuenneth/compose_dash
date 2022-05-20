@@ -3,15 +3,14 @@ package com.thomaskuenneth.composedash
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.lazy.GridCells
-import androidx.compose.foundation.lazy.LazyVerticalGrid
-import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.itemsIndexed
 import androidx.compose.material.Surface
 import androidx.compose.material.Text
 import androidx.compose.runtime.*
@@ -142,8 +141,6 @@ fun isPlayer(levelData: SnapshotStateList<Char>, index: Int) = levelData[index] 
 
 class MainActivity : ComponentActivity() {
 
-    @ExperimentalStdlibApi
-    @ExperimentalFoundationApi
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
@@ -158,8 +155,6 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    @ExperimentalStdlibApi
-    @ExperimentalFoundationApi
     @Composable
     fun ComposeDash() {
         key = remember { mutableStateOf(0L) }
@@ -175,7 +170,7 @@ class MainActivity : ComponentActivity() {
         Box {
             LazyVerticalGrid(
                 modifier = Modifier.fillMaxSize(),
-                cells = GridCells.Fixed(COLUMNS)
+                columns = GridCells.Fixed(COLUMNS)
             ) {
                 itemsIndexed(levelData, itemContent = { index, item ->
                     var background = Color.Transparent
