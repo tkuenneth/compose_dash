@@ -88,8 +88,8 @@ data class Enemy(var index: Int) {
 var playerIsMoving = false
 
 suspend fun moveEnemies() {
-    delay(200)
     var playerHit = false
+    delay(200)
     if (::enemies.isInitialized) {
         val indexPlayer = levelData.indexOf(CHAR_PLAYER)
         val colPlayer = indexPlayer % COLUMNS
