@@ -85,6 +85,8 @@ data class Enemy(var index: Int) {
     var dirY = 0
 }
 
+var playerIsMoving = false
+
 suspend fun moveEnemies() {
     delay(200)
     var playerHit = false
@@ -93,6 +95,7 @@ suspend fun moveEnemies() {
         val colPlayer = indexPlayer % COLUMNS
         val rowPlayer = indexPlayer / COLUMNS
         enemies.forEach {
+            delay(400)
             if (!playerHit) {
                 val current = it.index
                 val row = current / COLUMNS
@@ -194,12 +197,14 @@ class MainActivity : ComponentActivity() {
                                 .background(background)
                                 .clickable {
                                     movePlayerTo(levelData, index, gemsCollected, lives)
-                                },
-                            text = symbol.unicodeToString()
+                                }, text = symbol.unicodeToString()
                         )
                     })
                 }
-                Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
                     RestartButton(key, lives, lastLives)
                     Text(
                         text = "${PLAYER.unicodeToString()}${lives.value} ${GEM.unicodeToString()}${gemsCollected.intValue}",
@@ -208,12 +213,11 @@ class MainActivity : ComponentActivity() {
                         style = TextStyle(fontSize = 16.sp),
                         modifier = Modifier.weight(1.0F)
                     )
-                    if (gemsTotal == gemsCollected.intValue)
-                        LevelCompleted(key)
-                    if (lives.value != lastLives.intValue) {
-                        NextTry(key, lives, lastLives)
-                    }
                 }
+            }
+            if (gemsTotal == gemsCollected.intValue) LevelCompleted(key)
+            if (lives.value != lastLives.intValue) {
+                NextTry(key, lives, lastLives)
             }
         }
     }
@@ -312,6 +316,7 @@ class MainActivity : ComponentActivity() {
         gemsCollected: MutableState<Int>,
         lives: MutableState<Int>
     ) {
+        if (playerIsMoving) return
         val start = levelData.indexOf(CHAR_PLAYER)
         if (start == desti) return
         val startX = start % COLUMNS
@@ -322,6 +327,7 @@ class MainActivity : ComponentActivity() {
         val dirY = if (destiY > startY) 1 else -1
         var current = start
         lifecycleScope.launch {
+            playerIsMoving = true
             var x = startX
             var y = startY
             while (current != -1 && y != destiY) {
@@ -332,6 +338,7 @@ class MainActivity : ComponentActivity() {
                 current = walk(levelData, current, x, y, gemsCollected, lives)
                 x += dirX
             }
+            playerIsMoving = false
         }
     }
 
