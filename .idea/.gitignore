@@ -7,3 +7,5 @@ deploymentTargetSelector.xml
 kotlinc.xml
 migrations.xml
 misc.xml
+runConfigurations.xml
+studiobot.xml

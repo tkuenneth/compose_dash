@@ -6,8 +6,10 @@ import androidx.activity.compose.setContent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxScope
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.itemsIndexed
@@ -101,7 +103,7 @@ suspend fun moveEnemies() {
                         it.dirX = if (col >= colPlayer) -1 else 1
                     newPos += it.dirX
                     val newCol = newPos % COLUMNS
-                    if (newCol < 0 || newCol >= COLUMNS || levelData[newPos] != CHAR_BLANK) {
+                    if (newCol < 0 || levelData[newPos] != CHAR_BLANK) {
                         if (isPlayer(levelData, newPos)) {
                             playerHit = true
                         }
@@ -157,57 +159,62 @@ class MainActivity : ComponentActivity() {
 
     @Composable
     fun ComposeDash() {
-        key = remember { mutableStateOf(0L) }
+        key = remember { mutableLongStateOf(0L) }
         levelData = remember(key.value) {
             createLevelData()
         }
         enemies = remember(key.value) { createEnemies(levelData) }
         val gemsTotal = remember(key.value) { Collections.frequency(levelData, CHAR_GEM) }
-        val gemsCollected = remember(key.value) { mutableStateOf(0) }
+        val gemsCollected = remember(key.value) { mutableIntStateOf(0) }
         // Must be reset explicitly
-        val lastLives = remember { mutableStateOf(NUMBER_OF_LIVES) }
-        lives = remember { mutableStateOf(NUMBER_OF_LIVES) }
-        Box {
-            LazyVerticalGrid(
-                modifier = Modifier.fillMaxSize(),
-                columns = GridCells.Fixed(COLUMNS)
-            ) {
-                itemsIndexed(levelData, itemContent = { index, item ->
-                    var background = Color.Transparent
-                    val symbol = when (item) {
-                        CHAR_BRICK -> BRICK
-                        CHAR_GEM -> GEM
-                        CHAR_ROCK -> ROCK
-                        CHAR_SAND -> {
-                            background = Color(0xffc2b280)
-                            SAND
+        val lastLives = remember { mutableIntStateOf(NUMBER_OF_LIVES) }
+        lives = remember { mutableIntStateOf(NUMBER_OF_LIVES) }
+        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            Column {
+                LazyVerticalGrid(
+                    columns = GridCells.Fixed(COLUMNS)
+                ) {
+                    itemsIndexed(levelData, itemContent = { index, item ->
+                        var background = Color.Transparent
+                        val symbol = when (item) {
+                            CHAR_BRICK -> BRICK
+                            CHAR_GEM -> GEM
+                            CHAR_ROCK -> ROCK
+                            CHAR_SAND -> {
+                                background = Color(0xffc2b280)
+                                SAND
+                            }
+
+                            CHAR_PLAYER -> PLAYER
+                            CHAR_SPIDER -> SPIDER
+                            else -> BLANK
                         }
-                        CHAR_PLAYER -> PLAYER
-                        CHAR_SPIDER -> SPIDER
-                        else -> BLANK
-                    }
+                        Text(
+                            modifier = Modifier
+                                .background(background)
+                                .clickable {
+                                    movePlayerTo(levelData, index, gemsCollected, lives)
+                                },
+                            text = symbol.unicodeToString()
+                        )
+                    })
+                }
+                Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                    RestartButton(key, lives, lastLives)
                     Text(
-                        modifier = Modifier
-                            .background(background)
-                            .clickable {
-                                movePlayerTo(levelData, index, gemsCollected, lives)
-                            },
-                        text = symbol.unicodeToString()
+                        text = "${PLAYER.unicodeToString()}${lives.value} ${GEM.unicodeToString()}${gemsCollected.intValue}",
+                        color = Color.White,
+                        textAlign = TextAlign.Center,
+                        style = TextStyle(fontSize = 16.sp),
+                        modifier = Modifier.weight(1.0F)
                     )
-                })
+                    if (gemsTotal == gemsCollected.intValue)
+                        LevelCompleted(key)
+                    if (lives.value != lastLives.intValue) {
+                        NextTry(key, lives, lastLives)
+                    }
+                }
             }
-            Text(
-                text = "${PLAYER.unicodeToString()}${lives.value} ${GEM.unicodeToString()}${gemsCollected.value}",
-                color = Color.White,
-                style = TextStyle(fontSize = 16.sp),
-                modifier = Modifier.align(alignment = Alignment.BottomCenter)
-            )
-            if (gemsTotal == gemsCollected.value)
-                LevelCompleted(key)
-            if (lives.value != lastLives.value) {
-                NextTry(key, lives, lastLives)
-            }
-            RestartButton(key, this, lives, lastLives)
         }
     }
 
@@ -243,8 +250,7 @@ class MainActivity : ComponentActivity() {
                 .fillMaxSize()
                 .background(color = Color(0xa0000000))
                 .clickable {
-                    if (canTryAgain)
-                        lastLives.value = lives.value
+                    if (canTryAgain) lastLives.value = lives.value
                     else {
                         lives.value = NUMBER_OF_LIVES
                         lastLives.value = NUMBER_OF_LIVES
@@ -264,24 +270,16 @@ class MainActivity : ComponentActivity() {
 
     @Composable
     fun RestartButton(
-        key: MutableState<Long>, scope: BoxScope,
-        lives: MutableState<Int>,
-        lastLives: MutableState<Int>
+        key: MutableState<Long>, lives: MutableState<Int>, lastLives: MutableState<Int>
     ) {
-        scope.run {
-            Text(
-                POWER.unicodeToString(),
-                style = TextStyle(fontSize = 32.sp),
-                color = Color.White,
-                modifier = Modifier
-                    .align(Alignment.BottomStart)
-                    .clickable {
-                        lives.value = NUMBER_OF_LIVES
-                        lastLives.value = NUMBER_OF_LIVES
-                        key.value += 1
-                    }
-            )
-        }
+        Text(POWER.unicodeToString(),
+            style = TextStyle(fontSize = 32.sp),
+            color = Color.White,
+            modifier = Modifier.clickable {
+                lives.value = NUMBER_OF_LIVES
+                lastLives.value = NUMBER_OF_LIVES
+                key.value += 1
+            })
     }
 
     private fun createLevelData(): SnapshotStateList<Char> {
@@ -365,7 +363,7 @@ class MainActivity : ComponentActivity() {
         return result
     }
 
-    private suspend fun freeFall(
+    private fun freeFall(
         levelData: SnapshotStateList<Char>,
         current: Int,
         what: Char,
